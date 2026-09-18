@@ -9,8 +9,7 @@ The intended distribution model is the Shopify App Store. Direct sales and outbo
 - Dashboard summary metrics for open and resolved delivery issues
 - Filterable delivery-issue queue
 - Create/simulate a delivery issue
-- Move issues between needs-attention, in-progress, and resolved states
-- Reopen resolved issues
+- Resolve issues and reopen them to needs-attention
 - Automation and customer-message settings
 - PostgreSQL persistence behind an OpenAPI-described Express API
 
