@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Delivery Fixes"
+description = "A self-serve Shopify companion for helping merchants resolve address changes and delivery issues before orders ship."
+version = "1.0.0"
+id = "artifacts/delivery-fixes"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22211
+
+[services.development]
+run = "pnpm --filter @workspace/delivery-fixes run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/delivery-fixes", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/delivery-fixes/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22211"
+BASE_PATH = "/"

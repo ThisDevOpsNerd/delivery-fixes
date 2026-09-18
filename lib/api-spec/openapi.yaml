@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: delivery
+    description: Delivery issue management
+  - name: settings
+    description: Merchant automation settings
 paths:
   /healthz:
     get:
@@ -24,6 +28,112 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /delivery-issues:
+    get:
+      operationId: listDeliveryIssues
+      tags: [delivery]
+      summary: List delivery issues
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, needs_attention, in_progress, resolved]
+            default: all
+      responses:
+        "200":
+          description: Delivery issues
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeliveryIssue"
+    post:
+      operationId: createDeliveryIssue
+      tags: [delivery]
+      summary: Create a delivery issue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryIssueInput"
+      responses:
+        "201":
+          description: Delivery issue created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryIssue"
+  /delivery-issues/summary:
+    get:
+      operationId: getDeliverySummary
+      tags: [delivery]
+      summary: Get delivery issue summary
+      responses:
+        "200":
+          description: Delivery summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliverySummary"
+  /delivery-issues/{id}:
+    patch:
+      operationId: updateDeliveryIssue
+      tags: [delivery]
+      summary: Update a delivery issue
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryIssueUpdate"
+      responses:
+        "200":
+          description: Updated delivery issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryIssue"
+        "404":
+          description: Delivery issue not found
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get merchant automation settings
+      responses:
+        "200":
+          description: Automation settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update merchant automation settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsUpdate"
+      responses:
+        "200":
+          description: Updated automation settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +143,132 @@ components:
           type: string
       required:
         - status
+    DeliveryIssue:
+      type: object
+      required:
+        - id
+        - orderNumber
+        - customerName
+        - customerEmail
+        - issueType
+        - status
+        - currentAddress
+        - requestedAddress
+        - orderValue
+        - itemCount
+        - createdAt
+      properties:
+        id:
+          type: integer
+        orderNumber:
+          type: string
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        issueType:
+          type: string
+          enum: [address_change, delivery_note, wrong_address, carrier_exception]
+        status:
+          type: string
+          enum: [needs_attention, in_progress, resolved]
+        currentAddress:
+          type: string
+        requestedAddress:
+          type: string
+        orderValue:
+          type: number
+        itemCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        note:
+          type: ["string", "null"]
+    DeliveryIssueInput:
+      type: object
+      required:
+        - orderNumber
+        - customerName
+        - customerEmail
+        - issueType
+        - currentAddress
+        - requestedAddress
+        - orderValue
+        - itemCount
+      properties:
+        orderNumber:
+          type: string
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+          format: email
+        issueType:
+          type: string
+          enum: [address_change, delivery_note, wrong_address, carrier_exception]
+        currentAddress:
+          type: string
+        requestedAddress:
+          type: string
+        orderValue:
+          type: number
+        itemCount:
+          type: integer
+        note:
+          type: string
+    DeliveryIssueUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [needs_attention, in_progress, resolved]
+        note:
+          type: string
+    DeliverySummary:
+      type: object
+      required:
+        - total
+        - needsAttention
+        - resolvedToday
+        - protectedValue
+        - averageResponseMinutes
+      properties:
+        total:
+          type: integer
+        needsAttention:
+          type: integer
+        resolvedToday:
+          type: integer
+        protectedValue:
+          type: number
+        averageResponseMinutes:
+          type: integer
+    Settings:
+      type: object
+      required:
+        - enabled
+        - autoResolveAddress
+        - askForPhoto
+        - customerMessage
+      properties:
+        enabled:
+          type: boolean
+        autoResolveAddress:
+          type: boolean
+        askForPhoto:
+          type: boolean
+        customerMessage:
+          type: string
+    SettingsUpdate:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        autoResolveAddress:
+          type: boolean
+        askForPhoto:
+          type: boolean
+        customerMessage:
+          type: string
 
