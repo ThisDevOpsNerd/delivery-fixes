@@ -1,6 +1,6 @@
-# [Project name]
+# Delivery Fixes
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A self-serve Shopify companion that helps merchants resolve address and delivery issues before fulfilment.
 
 ## Run & Operate
 
@@ -22,19 +22,26 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/delivery-fixes` — merchant-facing React app
+- `artifacts/api-server/src/routes` — issue and settings APIs
+- `lib/api-spec/openapi.yaml` — API contract
+- `lib/db/src/schema` — PostgreSQL tables
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Keep the first product narrowly focused on post-purchase delivery corrections.
+- Use self-serve onboarding and marketplace distribution rather than outbound sales.
+- Shopify connectivity is intentionally deferred until the core workflow is validated.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Merchant dashboard with summary metrics and a filterable issue queue
+- Resolve, reopen, and simulate delivery issues
+- Configure automation and customer messaging
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Do not rely on direct sales as the customer acquisition strategy.
 
 ## Gotchas
 
