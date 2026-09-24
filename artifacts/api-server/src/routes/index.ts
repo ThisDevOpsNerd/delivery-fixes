@@ -1,12 +1,12 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
-import deliveryRouter from "./delivery";
-import settingsRouter from "./settings";
+import deliveryIssuesRouter from "./delivery-issues";
+import shopifyWebhooksRouter from "./shopify-webhooks";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
-router.use(deliveryRouter);
-router.use(settingsRouter);
+router.use(deliveryIssuesRouter);
+router.use(shopifyWebhooksRouter);
 
 export default router;

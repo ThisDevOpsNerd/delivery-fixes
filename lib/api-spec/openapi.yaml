@@ -1,26 +1,19 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 0.2.0
+  description: Delivery Fixes API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
-  - name: delivery
-    description: Delivery issue management
-  - name: settings
-    description: Merchant automation settings
+  - name: delivery-fixes
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
-      summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -31,109 +24,39 @@ paths:
   /delivery-issues:
     get:
       operationId: listDeliveryIssues
-      tags: [delivery]
-      summary: List delivery issues
-      parameters:
-        - name: status
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [all, needs_attention, in_progress, resolved]
-            default: all
+      tags: [delivery-fixes]
+      summary: Load delivery issues from open, unfulfilled Shopify orders
       responses:
         "200":
-          description: Delivery issues
+          description: Current delivery issue queue
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/DeliveryIssue"
+                $ref: "#/components/schemas/DeliveryIssueQueue"
+        "502":
+          description: Shopify could not be reached
+  /delivery-issues/resolve:
     post:
-      operationId: createDeliveryIssue
-      tags: [delivery]
-      summary: Create a delivery issue
+      operationId: resolveDeliveryIssue
+      tags: [delivery-fixes]
+      summary: Apply a corrected shipping address to Shopify
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/DeliveryIssueInput"
-      responses:
-        "201":
-          description: Delivery issue created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/DeliveryIssue"
-  /delivery-issues/summary:
-    get:
-      operationId: getDeliverySummary
-      tags: [delivery]
-      summary: Get delivery issue summary
+              $ref: "#/components/schemas/DeliveryIssueResolution"
       responses:
         "200":
-          description: Delivery summary
+          description: Updated Shopify order
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DeliverySummary"
-  /delivery-issues/{id}:
-    patch:
-      operationId: updateDeliveryIssue
-      tags: [delivery]
-      summary: Update a delivery issue
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/DeliveryIssueUpdate"
-      responses:
-        "200":
-          description: Updated delivery issue
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/DeliveryIssue"
-        "404":
-          description: Delivery issue not found
-  /settings:
-    get:
-      operationId: getSettings
-      tags: [settings]
-      summary: Get merchant automation settings
-      responses:
-        "200":
-          description: Automation settings
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Settings"
-    patch:
-      operationId: updateSettings
-      tags: [settings]
-      summary: Update merchant automation settings
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SettingsUpdate"
-      responses:
-        "200":
-          description: Updated automation settings
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Settings"
+                $ref: "#/components/schemas/DeliveryIssueResolutionResult"
+        "400":
+          description: Invalid address or Shopify rejected the update
+        "502":
+          description: Shopify could not be reached
 components:
   schemas:
     HealthStatus:
@@ -141,134 +64,102 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
+    Address:
+      type: object
+      properties:
+        name: { type: string }
+        line1: { type: string }
+        line2: { type: string }
+        city: { type: string }
+        province: { type: string }
+        postalCode: { type: string }
+        country: { type: string }
+      required: [name, line1, city, province, postalCode, country]
+    DeliveryIssueTimelineEvent:
+      type: object
+      properties:
+        date: { type: string, format: date-time }
+        message: { type: string }
+      required: [date, message]
     DeliveryIssue:
       type: object
+      properties:
+        id: { type: string }
+        shopifyOrderId: { type: string }
+        shopifyAdminUrl: { type: string }
+        orderNumber: { type: string }
+        customerName: { type: string }
+        customerEmail: { type: string }
+        issueType:
+          type: string
+          enum: [address_invalid, missing_apartment, carrier_rejected, zip_mismatch, po_box_unsupported]
+        severity:
+          type: string
+          enum: [critical, warning, review]
+        status:
+          type: string
+          enum: [open, waiting_customer, snoozed, resolved]
+        createdAt: { type: string, format: date-time }
+        shipBy: { type: string, format: date-time }
+        carrier: { type: string }
+        itemCount: { type: integer }
+        orderValue: { type: number }
+        currencyCode: { type: string }
+        currentAddress:
+          $ref: "#/components/schemas/Address"
+        suggestedAddress:
+          oneOf:
+            - $ref: "#/components/schemas/Address"
+            - type: "null"
+        confidence: { type: number }
+        reason: { type: string }
+        timeline:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeliveryIssueTimelineEvent"
       required:
         - id
+        - shopifyOrderId
+        - shopifyAdminUrl
         - orderNumber
         - customerName
         - customerEmail
         - issueType
+        - severity
         - status
-        - currentAddress
-        - requestedAddress
-        - orderValue
-        - itemCount
         - createdAt
-      properties:
-        id:
-          type: integer
-        orderNumber:
-          type: string
-        customerName:
-          type: string
-        customerEmail:
-          type: string
-        issueType:
-          type: string
-          enum: [address_change, delivery_note, wrong_address, carrier_exception]
-        status:
-          type: string
-          enum: [needs_attention, in_progress, resolved]
-        currentAddress:
-          type: string
-        requestedAddress:
-          type: string
-        orderValue:
-          type: number
-        itemCount:
-          type: integer
-        createdAt:
-          type: string
-          format: date-time
-        note:
-          type: ["string", "null"]
-    DeliveryIssueInput:
-      type: object
-      required:
-        - orderNumber
-        - customerName
-        - customerEmail
-        - issueType
-        - currentAddress
-        - requestedAddress
-        - orderValue
+        - shipBy
+        - carrier
         - itemCount
-      properties:
-        orderNumber:
-          type: string
-        customerName:
-          type: string
-        customerEmail:
-          type: string
-          format: email
-        issueType:
-          type: string
-          enum: [address_change, delivery_note, wrong_address, carrier_exception]
-        currentAddress:
-          type: string
-        requestedAddress:
-          type: string
-        orderValue:
-          type: number
-        itemCount:
-          type: integer
-        note:
-          type: string
-    DeliveryIssueUpdate:
+        - orderValue
+        - currencyCode
+        - currentAddress
+        - confidence
+        - reason
+        - timeline
+    DeliveryIssueQueue:
       type: object
       properties:
-        status:
-          type: string
-          enum: [needs_attention, in_progress, resolved]
-        note:
-          type: string
-    DeliverySummary:
-      type: object
-      required:
-        - total
-        - needsAttention
-        - resolvedToday
-        - protectedValue
-        - averageResponseMinutes
-      properties:
-        total:
-          type: integer
-        needsAttention:
-          type: integer
-        resolvedToday:
-          type: integer
-        protectedValue:
-          type: number
-        averageResponseMinutes:
-          type: integer
-    Settings:
-      type: object
-      required:
-        - enabled
-        - autoResolveAddress
-        - askForPhoto
-        - customerMessage
-      properties:
-        enabled:
-          type: boolean
-        autoResolveAddress:
-          type: boolean
-        askForPhoto:
-          type: boolean
-        customerMessage:
-          type: string
-    SettingsUpdate:
+        shopName: { type: string }
+        shopDomain: { type: string }
+        syncedAt: { type: string, format: date-time }
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeliveryIssue"
+      required: [shopName, shopDomain, syncedAt, issues]
+    DeliveryIssueResolution:
       type: object
       properties:
-        enabled:
-          type: boolean
-        autoResolveAddress:
-          type: boolean
-        askForPhoto:
-          type: boolean
-        customerMessage:
-          type: string
-
+        shopifyOrderId: { type: string, minLength: 1 }
+        address:
+          $ref: "#/components/schemas/Address"
+      required: [shopifyOrderId, address]
+    DeliveryIssueResolutionResult:
+      type: object
+      properties:
+        shopifyOrderId: { type: string }
+        updatedAt: { type: string, format: date-time }
+        message: { type: string }
+      required: [shopifyOrderId, updatedAt, message]

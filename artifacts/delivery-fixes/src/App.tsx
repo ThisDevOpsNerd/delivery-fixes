@@ -4,31 +4,23 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
-import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import { Workbench } from '@/components/Workbench';
+import {
+  Route,
+  Switch,
+  useLocation,
+  Router as WouterRouter,
+} from 'wouter';
 
-import { Shell } from '@/components/layout/shell';
-import { Dashboard } from '@/pages/dashboard';
-import { SettingsPage } from '@/pages/settings';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 function Router() {
   return (
     <RoutedErrorBoundary>
-      <Shell>
-        <Switch>
-          <Route path="/" component={Dashboard} />
-          <Route path="/settings" component={SettingsPage} />
-          <Route component={NotFound} />
-        </Switch>
-      </Shell>
+      <Switch>
+        <Route path="/" component={Workbench} />
+        <Route component={NotFound} />
+      </Switch>
     </RoutedErrorBoundary>
   );
 }

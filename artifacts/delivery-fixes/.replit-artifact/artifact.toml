@@ -1,7 +1,7 @@
 kind = "web"
 previewPath = "/"
 title = "Delivery Fixes"
-description = "A self-serve Shopify companion for helping merchants resolve address changes and delivery issues before orders ship."
+description = "A self-serve Shopify merchant operations app for finding and resolving address changes and delivery issues before orders ship or enter fulfillment."
 version = "1.0.0"
 id = "artifacts/delivery-fixes"
 router = "path"

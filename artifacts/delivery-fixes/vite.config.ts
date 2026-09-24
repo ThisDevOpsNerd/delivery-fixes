@@ -30,6 +30,16 @@ if (!basePath) {
 export default defineConfig({
   base: basePath,
   plugins: [
+    {
+      name: 'inject-shopify-api-key',
+      transformIndexHtml(html) {
+        const apiKey = process.env.SHOPIFY_API_KEY;
+        if (!apiKey) {
+          throw new Error('SHOPIFY_API_KEY is required');
+        }
+        return html.replace('__SHOPIFY_API_KEY__', apiKey);
+      },
+    },
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
@@ -69,6 +79,10 @@ export default defineConfig({
     strictPort: true,
     host: '0.0.0.0',
     allowedHosts: true,
+    headers: {
+      'Content-Security-Policy':
+        "frame-ancestors https://admin.shopify.com https://*.myshopify.com",
+    },
     fs: {
       strict: true,
     },

@@ -1,78 +1,25 @@
 # Delivery Fixes
 
-Delivery Fixes is a working MVP for Shopify merchants who need to resolve address and delivery problems before fulfilment. It provides a focused, self-serve operations queue rather than a general customer-support suite.
+Delivery Fixes is an embedded Shopify app for finding and correcting delivery-address problems before fulfillment. It reads open, unfulfilled orders from the merchant's own store and only updates a shipping address after the merchant confirms the change.
 
-The intended distribution model is the Shopify App Store. Direct sales and outbound-led onboarding are not part of the product strategy.
+## Railway deployment
 
-## What works today
+Deploy this repository as a new Railway project with an app service and a separate Railway PostgreSQL service. `railway.json` builds the frontend and API together and runs the Express server on Railway's `PORT`.
 
-- Dashboard summary metrics for open and resolved delivery issues
-- Filterable delivery-issue queue
-- Create/simulate a delivery issue
-- Resolve issues and reopen them to needs-attention
-- Automation and customer-message settings
-- PostgreSQL persistence behind an OpenAPI-described Express API
+Configure these app-service variables in Railway:
 
-## Repository structure
+- `NODE_ENV=production`
+- `DATABASE_URL` as a reference to the Railway PostgreSQL service's `DATABASE_URL`
+- `SHOPIFY_API_KEY` (the public Client ID from the Shopify Dev Dashboard; required at build time)
+- `SHOPIFY_API_SECRET` (Shopify app Client secret; keep private)
+- `SESSION_SECRET` (long random encryption key; keep private and retain it across deployments)
 
-- `artifacts/delivery-fixes` — React and Vite merchant interface
-- `artifacts/api-server` — Express API
-- `lib/api-spec/openapi.yaml` — shared API contract
-- `lib/api-client-react` and `lib/api-zod` — generated client hooks and validation
-- `lib/db` — Drizzle schema and database access
-- `docs/ui-selection-brief.md` — baseline and future UI exploration plan
+Initialize the new PostgreSQL schema once before accepting Shopify installations with `pnpm --filter @workspace/db run push` using the Railway database URL. Do not run schema push automatically on every production deploy.
 
-## Run locally on Replit
+Use the Railway app's HTTPS domain in the Shopify Dev Dashboard as the **App URL**. Enable embedded App Home and Shopify-managed installation, request `read_orders,write_orders`, and register `https://<railway-domain>/api/shopify/webhooks` for `app/uninstalled`, `customers/data_request`, `customers/redact`, and `shop/redact`. Access to customer names and shipping addresses may require Shopify protected-customer-data approval.
 
-### Requirements
+The Replit Shopify connector is for local development preview only; production requests must have a valid Shopify App Bridge ID token.
 
-- Node.js 24
-- pnpm
-- PostgreSQL exposed through `DATABASE_URL`
+## Development
 
-Install dependencies from the repository root:
-
-```sh
-pnpm install
-```
-
-Push the development schema:
-
-```sh
-pnpm --filter @workspace/db run push
-```
-
-Run the API and web app using the configured Replit workflows:
-
-```sh
-pnpm --filter @workspace/api-server run dev
-pnpm --filter @workspace/delivery-fixes run dev
-```
-
-The API server listens on port 5000. In Replit, open the Delivery Fixes artifact through its proxied preview rather than navigating to localhost directly.
-
-## Useful checks
-
-```sh
-pnpm run typecheck
-pnpm run build
-pnpm --filter @workspace/api-spec run codegen
-```
-
-Run code generation after changing `lib/api-spec/openapi.yaml`.
-
-## Architecture
-
-The frontend uses React, Vite, TanStack Query, Wouter, Tailwind CSS, and reusable Radix-based components. The Express API validates request and response data against generated Zod schemas. PostgreSQL data is accessed through Drizzle ORM. The OpenAPI contract is the source for generated frontend hooks and shared validation.
-
-The MVP is intentionally narrow: it validates the merchant workflow for post-purchase delivery corrections before introducing Shopify platform complexity.
-
-## Intentionally deferred
-
-- Shopify OAuth, store installation, webhooks, and order synchronization
-- Billing and subscription plans
-- Shopify App Store submission and production publishing
-- A final visual direction or generated UI variants
-- Additional carrier, help-desk, or messaging integrations
-
-See [the UI selection brief](docs/ui-selection-brief.md) for the visual decisions that remain open. These items should be added as self-serve product flows; they should not introduce a direct-sales workflow.
+Use Node.js 24 and pnpm. Install dependencies with `pnpm install`, run `pnpm run typecheck`, and start the API and web workflows locally. See `replit.md` for more details.
